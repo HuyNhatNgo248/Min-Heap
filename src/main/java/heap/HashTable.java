@@ -1,77 +1,111 @@
 package heap;
+/*
+ * Author: Huy Nhat Ngo
+ * Date: 5/22/2020
+ * Purpose: implement a hash table modeled after java.util.Map
+ */
 
-/** A hash table modeled after java.util.Map. It uses chaining for collision
+/**
+ * A hash table modeled after java.util.Map. It uses chaining for collision
  * resolution and grows its underlying storage by a factor of 2 when the load
- * factor exceeds 0.8. */
-public class HashTable<K,V> {
+ * factor exceeds 0.8.
+ */
+public class HashTable<K, V> {
 
     protected Pair[] buckets; // array of list nodes that store K,V pairs
     protected int size; // how many items currently in the map
 
 
-    /** class Pair stores a key-value pair and a next pointer for chaining
-     * multiple values together in the same bucket, linked-list style*/
+    /**
+     * class Pair stores a key-value pair and a next pointer for chaining
+     * multiple values together in the same bucket, linked-list style
+     */
     public class Pair {
         protected K key;
         protected V value;
         protected Pair next;
 
-        /** constructor: sets key and value */
+        /**
+         * constructor: sets key and value
+         */
         public Pair(K k, V v) {
             key = k;
             value = v;
             next = null;
         }
 
-        /** constructor: sets key, value, and next */
+        /**
+         * constructor: sets key, value, and next
+         */
         public Pair(K k, V v, Pair nxt) {
             key = k;
             value = v;
             next = nxt;
         }
 
-        /** returns (k, v) String representation of the pair */
+        /**
+         * returns (k, v) String representation of the pair
+         */
         public String toString() {
             return "(" + key + ", " + value + ")";
         }
     }
 
-    /** constructor: initialize with default capacity 17 */
+    /**
+     * constructor: initialize with default capacity 17
+     */
     public HashTable() {
         this(17);
     }
 
-    /** constructor: initialize the given capacity */
+    /**
+     * constructor: initialize the given capacity
+     */
     public HashTable(int capacity) {
         buckets = createBucketArray(capacity);
     }
 
-    /** Return the size of the map (the number of key-value mappings in the
-     * table) */
+    /**
+     * Return the size of the map (the number of key-value mappings in the
+     * table)
+     */
     public int getSize() {
         return size;
     }
 
-    /** Return the current capacity of the table (the size of the buckets
-     * array) */
+    /**
+     * Return the current capacity of the table (the size of the buckets
+     * array)
+     */
     public int getCapacity() {
         return buckets.length;
     }
 
-    /** Return the value to which the specified key is mapped, or null if this
+    /**
+     * Return the value to which the specified key is mapped, or null if this
      * map contains no mapping for the key.
-     * Runtime: average case O(1); worst case O(size) */
+     * Runtime: average case O(1); worst case O(size)
+     */
     public V get(K key) {
         // TODO 2.1 - do this together with put.
-        throw new UnsupportedOperationException();
+        int h = hashValue(key, buckets.length);
+        Pair pointer = buckets[h];
+        while (pointer != null) {
+            if (pointer.key == key)
+                return pointer.value;
+            pointer = pointer.next;
+        }
+        return null;
     }
 
-    /** Associate the specified value with the specified key in this map. If
+    /**
+     * Associate the specified value with the specified key in this map. If
      * the map previously contained a mapping for the key, the old value is
      * replaced. Return the previous value associated with key, or null if
      * there was no mapping for key. If the load factor exceeds 0.8 after this
      * insertion, grow the array by a factor of two and rehash.
-     * Runtime: average case O(1); worst case O(size^2 + a.length)*/
+     * Runtime: average case O(1); worst case O(size^2 + a.length)
+     */
     public V put(K key, V val) {
         // TODO 2.2
         //   do this together with get. For now, don't worry about growing the
@@ -82,23 +116,88 @@ public class HashTable<K,V> {
         //
         // TODO 2.5 - modify this method to grow and rehash if the load factor
         //            exceeds 0.8.
-        throw new UnsupportedOperationException();
+        int h = hashValue(key, buckets.length);
+        if (buckets[h] == null) {
+            buckets[h] = new Pair(key, val);
+            size++;
+            growIfNeeded();
+            return null;
+        } else {
+            Pair pointer = buckets[h];
+            Pair tail = null;
+            //check if map already contained the key
+            while (pointer != null) {
+                if (pointer.key == key) {
+                    V oldValue = pointer.value;
+                    pointer.value = val;
+                    return oldValue;
+                }
+                if (pointer.next == null) {
+                    tail = pointer;
+                    break;
+                }
+                pointer = pointer.next;
+            }
+            tail.next = new Pair(key, val);
+            size++;
+            growIfNeeded();
+            return null;
+        }
     }
 
-    /** Return true if this map contains a mapping for the specified key.
-     *  Runtime: average case O(1); worst case O(size) */
+    /**
+     * Return true if this map contains a mapping for the specified key.
+     * Runtime: average case O(1); worst case O(size)
+     */
     public boolean containsKey(K key) {
         // TODO 2.3
-        throw new UnsupportedOperationException();
+        return get(key) != null;
     }
 
-    /** Remove the mapping for the specified key from this map if present.
-     *  Return the previous value associated with key, or null if there was no
-     *  mapping for key.
-     *  Runtime: average case O(1); worst case O(size)*/
+    /**
+     * Remove the mapping for the specified key from this map if present.
+     * Return the previous value associated with key, or null if there was no
+     * mapping for key.
+     * Runtime: average case O(1); worst case O(size)
+     */
     public V remove(K key) {
         // TODO 2.4
-        throw new UnsupportedOperationException();
+        int h = hashValue(key, buckets.length);
+        V removeValue;
+        //remove head
+        if (!containsKey(key))
+            return null;
+        else {
+            if (key == buckets[h].key) {
+                removeValue = buckets[h].value;
+                buckets[h] = buckets[h].next;
+                size--;
+                return removeValue;
+            }
+
+            Pair curr1 = buckets[h];
+            Pair curr2 = buckets[h];
+            while (curr2.key != key && curr2.next != null) {
+                curr1 = curr2;
+                curr2 = curr2.next;
+            }
+
+            //remove last
+            if (curr2.next == null) {
+                removeValue = curr2.value;
+                curr2 = curr1;
+                curr1.next = null;
+                size--;
+                return removeValue;
+            } else {
+                //remove key sandwiched in between
+                removeValue = curr2.value;
+                curr2 = curr1;
+                curr1.next = curr1.next.next;
+                size--;
+                return removeValue;
+            }
+        }
     }
 
 
@@ -106,7 +205,43 @@ public class HashTable<K,V> {
     /* check the load factor; if it exceeds 0.8, double the array size
      * (capacity) and rehash values from the old array to the new array */
     private void growIfNeeded() {
-      throw new UnsupportedOperationException();
+        double loadFactor = (double) size / buckets.length;
+        if (loadFactor > 0.8) {
+            Pair[] newArr = createBucketArray(buckets.length * 2);
+            Pair[] tail = createBucketArray(buckets.length * 2);
+            for (int i = 0; i < buckets.length; i++) {
+                Pair pointer = buckets[i];
+                while (pointer != null) {
+                    int h = hashValue(pointer.key, newArr.length);
+                    if (newArr[h] == null) {
+                        rehashing(pointer, h, newArr, tail[h]);
+                        tail[h] = newArr[h];
+                    } else {
+                        rehashing(pointer, h, newArr, tail[h]);
+                        tail[h] = tail[h].next;
+                    }
+                    pointer = pointer.next;
+                }
+            }
+            buckets = newArr;
+        }
+    }
+
+    // helper method:
+    /* calculate and return the hash value (bucket address)
+     * pre: key is not null */
+    private int hashValue(K key, int arrLength) {
+        return Math.abs(key.hashCode() % arrLength);
+    }
+
+    // helper method:
+    /* similar to put method but w/o checking for duplicate element */
+    private void rehashing(Pair pointer, int bucketAddress, Pair[] newArr, Pair tail) {
+        if (newArr[bucketAddress] == null) {
+            newArr[bucketAddress] = new Pair(pointer.key, pointer.value);
+        } else {
+            tail.next = new Pair(pointer.key, pointer.value);
+        }
     }
 
     /* useful method for debugging - prints a representation of the current
@@ -121,7 +256,6 @@ public class HashTable<K,V> {
             while (node != null) {
                 System.out.print(">" + node + "--");
                 node = node.next;
-
             }
             System.out.println("|");
         }
@@ -133,6 +267,6 @@ public class HashTable<K,V> {
      *  arrays don't play well together.*/
     @SuppressWarnings("unchecked")
     protected Pair[] createBucketArray(int size) {
-        return (Pair[]) new HashTable<?,?>.Pair[size];
+        return (Pair[]) new HashTable<?, ?>.Pair[size];
     }
 }
