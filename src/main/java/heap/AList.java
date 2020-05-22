@@ -2,7 +2,8 @@ package heap;
 /*
  * Author: Huy Nhat Ngo
  * Date: 5/22/2020
- * Purpose: AList test suite
+ * Purpose: provide An ArrayList-like dynamic array class that allocates
+ * new memory when needed
  */
 import java.util.NoSuchElementException;
 
